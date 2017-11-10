@@ -1,0 +1,6 @@
+microsoft:
+  cognitiveservices:
+    face:
+      uri: https://westus.api.cognitive.microsoft.com/face/v1.0
+      uriPersonGroups: ${microsoft.cognitiveservices.face.uri}/personGroups
+      #ocp-apim-subscription-key: add your key here or add as an env
