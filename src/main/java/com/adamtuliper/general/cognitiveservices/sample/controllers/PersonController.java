@@ -20,7 +20,11 @@ import org.springframework.web.client.RestTemplate;
 
 import com.adamtuliper.general.cognitiveservices.sample.contract.Person;
 
-
+/**
+ * The REST controller for the MCS Face API proxy
+ * @author csmith
+ *
+ */
 @RestController()
 public class PersonController {
 
@@ -32,7 +36,11 @@ public class PersonController {
     @Value("${microsoft.cognitiveservices.face.uri.person}")
     private String personUri;
 
-
+    /**
+     * Get a person by ID
+     * @param personId the id to use
+     * @return a person or null
+     */
     @RequestMapping("/people")
     public Person getPerson(@RequestParam(value="personId") String personId) {
 

@@ -1,6 +1,7 @@
 package com.adamtuliper.general.cognitiveservices.sample.controllers;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.adamtuliper.general.cognitiveservices.sample.contract.Person;
 import com.adamtuliper.general.cognitiveservices.sample.contract.PersonGroup;
@@ -88,10 +89,13 @@ public class PersonGroupController {
 	 * @param personGroup
 	 * @return the created person group
 	 */
+
 	@RequestMapping(path = "/personGroups/{personGroupId}", method = RequestMethod.POST )
 	@ResponseBody
-	public PersonGroup createPersonGroup(@PathVariable String personGroupId, @RequestBody PersonGroup personGroup) {
+	public PersonGroup createPersonGroup(@RequestBody PersonGroup personGroup) {
 
+		String personGroupId = UUID.randomUUID().toString();
+		personGroup.setPersonGroupId(personGroupId);
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 		headers.add("Content-Type", "application/json");
 		headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
@@ -105,6 +109,25 @@ public class PersonGroupController {
 		// Put does not return a new object
 		return personGroup;
 
+	}
+
+	/**
+	 * Delete a person group
+	 * @param personGroupId
+	 * @return the created person group
+	 */
+	@RequestMapping(path = "/personGroups/{personGroupId}", method = RequestMethod.DELETE )
+	@ResponseBody
+	public void deletePersonGroup(@PathVariable String personGroupId) {
+
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		headers.add("Content-Type", "application/json");
+		headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
+
+		RestTemplate restTemplate = new RestTemplate();
+
+		restTemplate.delete(personGroupUri, personGroupId);
+		
 	}
 
 }

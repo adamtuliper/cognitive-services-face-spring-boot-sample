@@ -35,7 +35,7 @@ public class CognitiveServicesFaceApiSpringBootSampleTests {
 	}
 
 	@Test
-	public void testPersonGroupsAccessable() {
+	public void testThatPersonGroupsAreAccessable() {
 		ResponseEntity<List<PersonGroup>> response = template.exchange(personGroupsUri,HttpMethod.GET,null, new ParameterizedTypeReference<List<PersonGroup>>() {
         });
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -44,12 +44,18 @@ public class CognitiveServicesFaceApiSpringBootSampleTests {
 	
 	@Test
 	public void testThatPersonGroupsCanBeCreated() {
+		PersonGroup personGroup = createPersonPersonGroup();
+		PersonGroup response = template.postForObject(personGroupUri, personGroup, PersonGroup.class, personGroup.getPersonGroupId());
+		assertThat(response).isNotNull();
+		assertThat(response.getName()).isEqualTo(personGroup.getName());
+		template.delete(personGroupUri, personGroup.getPersonGroupId());
+	}
+
+	private PersonGroup createPersonPersonGroup() {
 		PersonGroup personGroup = new PersonGroup();
 		personGroup.setName("Test");
 		personGroup.setUserData("User Data");
 		personGroup.setPersonGroupId(UUID.randomUUID().toString());
-		PersonGroup response = template.postForObject(personGroupUri, personGroup, PersonGroup.class, personGroup.getPersonGroupId());
-		assertThat(response).isNotNull();
-		assertThat(response.getName()).isEqualTo(personGroup.getName());
+		return personGroup;
 	}
 }
