@@ -1,14 +1,19 @@
 package com.adamtuliper.general.cognitiveservices.sample.contract;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * A Person on the MCS Face Service
  * 
  * @author csmith
  *
  */
-public class Person {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class Person implements MCSFaceObject{
 	String personId;
+	String personGroupId;
 	String name;
+	String userData; 
 	public String getPersonId() {
 		return personId;
 	}
@@ -20,5 +25,17 @@ public class Person {
 	}
 	public void setName(String name) {
 		this.name = name;
+	}
+	public String getPersonGroupId() {
+		return personGroupId;
+	}
+	public void setPersonGroupId(String personGroupId) {
+		this.personGroupId = personGroupId;
+	}
+	public String getUserData() {
+		return userData;
+	}
+	public void setUserData(String userData) {
+		this.userData = userData;
 	}
 }

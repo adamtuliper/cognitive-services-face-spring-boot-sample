@@ -3,67 +3,81 @@ package com.adamtuliper.general.cognitiveservices.sample.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.adamtuliper.general.cognitiveservices.sample.ControllerSupport;
 import com.adamtuliper.general.cognitiveservices.sample.contract.Person;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * The REST controller for the MCS Face API proxy
  * @author csmith
  *
  */
+	
 @RestController()
 public class PersonController {
 
-    //The key for your Microsoft Cognitive Services Face api.
-    @Value("${microsoft.cognitiveservices.face.ocp-apim-subscription-key}")
-    private String subscriptionKey;
+	@Autowired
+	private ControllerSupport support; 
 
-    //See application.yaml for settings
-    @Value("${microsoft.cognitiveservices.face.uri.person}")
-    private String personUri;
 
     /**
      * Get a person by ID
      * @param personId the id to use
      * @return a person or null
      */
-    @RequestMapping("/people")
+    @RequestMapping("/persons")
     public Person getPerson(@RequestParam(value="personId") String personId) {
-
-        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-        headers.add("Content-Type", "application/json");
-        headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
 
         RestTemplate restTemplate = new RestTemplate();
         
-        HttpEntity<Person> httpEntity = new HttpEntity<Person>(headers);
-
         ResponseEntity<Person> response = restTemplate.exchange(
-        		personUri,
-       		 HttpMethod.GET,
-        		 httpEntity, 
-        		 Person.class,
-       		 personId);
+        	support.personUri,
+       		HttpMethod.GET,
+        	support.augmentHeaders(), 
+        	Person.class,
+       		personId);
 		Person person = response.getBody();
  
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
 
         return person;
+    }
+    
 
+    /**
+     * Create a person
+     * @return a person
+     */
+    @RequestMapping(value="/persons", method=RequestMethod.POST)
+    public Person createPerson(@RequestBody Person person) {
+
+        RestTemplate restTemplate = new RestTemplate();
+        
+        String personGroupId = person.getPersonGroupId();
+        person.setPersonGroupId(null);
+		ResponseEntity<Person> response = restTemplate.exchange(
+        	support.personsUri,
+       		HttpMethod.POST,
+        	support.augmentHeaders(person), 
+        	Person.class,
+        	personGroupId);
+		Person newPerson = response.getBody();
+		person.setPersonGroupId(personGroupId);
+		person.setPersonId(newPerson.getPersonId());
+        assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
+
+        return person;
     }
 }
 

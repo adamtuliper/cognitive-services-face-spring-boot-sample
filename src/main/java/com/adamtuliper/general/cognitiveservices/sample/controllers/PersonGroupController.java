@@ -1,57 +1,54 @@
 package com.adamtuliper.general.cognitiveservices.sample.controllers;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 import java.util.UUID;
 
-import com.adamtuliper.general.cognitiveservices.sample.contract.Person;
-import com.adamtuliper.general.cognitiveservices.sample.contract.PersonGroup;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import static org.assertj.core.api.Assertions.assertThat;
+
+import com.adamtuliper.general.cognitiveservices.sample.ControllerSupport;
+import com.adamtuliper.general.cognitiveservices.sample.contract.Person;
+import com.adamtuliper.general.cognitiveservices.sample.contract.PersonGroup;
+import com.adamtuliper.general.cognitiveservices.sample.contract.TrainingStatus;
 
 @RestController()
 public class PersonGroupController {
 
-	// The key for your Microsoft Cognitive Services Face api.
-	@Value("${microsoft.cognitiveservices.face.ocp-apim-subscription-key}")
-	private String subscriptionKey;
+	private static final Logger LOGGER=LoggerFactory.getLogger(PersonGroupController.class);
+	@Autowired
+	private ControllerSupport support; 
 
-	// See application.yaml for settings
-	@Value("${microsoft.cognitiveservices.face.uri.personGroups}")
-	private String personGroupsUri;
-
-	@Value("${microsoft.cognitiveservices.face.uri.people}")
-	private String peopleUri;
-
-	@Value("${microsoft.cognitiveservices.face.uri.personGroup}")
-	private String personGroupUri;
-
+	/**
+	 * List all personGroups 
+	 * @return
+	 */
 	@RequestMapping(path = "/personGroups", method = RequestMethod.GET)
 	public List<PersonGroup> getPersonGroups() {
 
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Content-Type", "application/json");
-		headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
-
 		RestTemplate restTemplate = new RestTemplate();
 
-		ResponseEntity<List<PersonGroup>> response = restTemplate.exchange(personGroupsUri, HttpMethod.GET,
-				new HttpEntity<Object>(headers), new ParameterizedTypeReference<List<PersonGroup>>() {
+		ResponseEntity<List<PersonGroup>> response = restTemplate.exchange(support.personGroupsUri, HttpMethod.GET,
+				support.augmentHeaders(), new ParameterizedTypeReference<List<PersonGroup>>() {
 				});
-
-		List<PersonGroup> personGroups = response.getBody();
 
 		assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
 
+		List<PersonGroup> personGroups = response.getBody();
 		return personGroups;
 
 	}
@@ -67,14 +64,11 @@ public class PersonGroupController {
 	public List<Person> getPeople(@PathVariable("groupId") String groupId,
 			@RequestParam(name = "start", required = false, defaultValue = "0") Integer start,
 			@RequestParam(name = "size", required = false, defaultValue = "10") Integer size) {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Content-Type", "application/json");
-		headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
 
 		RestTemplate restTemplate = new RestTemplate();
 
-		ResponseEntity<List<Person>> response = restTemplate.exchange(peopleUri, HttpMethod.GET,
-				new HttpEntity<Object>(headers), new ParameterizedTypeReference<List<Person>>() {
+		ResponseEntity<List<Person>> response = restTemplate.exchange(support.personsUri, HttpMethod.GET,
+				support.augmentHeaders(), new ParameterizedTypeReference<List<Person>>() {
 				});
 
 		List<Person> people = response.getBody();
@@ -90,23 +84,63 @@ public class PersonGroupController {
 	 * @return the created person group
 	 */
 
-	@RequestMapping(path = "/personGroups/{personGroupId}", method = RequestMethod.POST )
+	@RequestMapping(path = "/personGroups", method = RequestMethod.POST )
 	@ResponseBody
 	public PersonGroup createPersonGroup(@RequestBody PersonGroup personGroup) {
 
 		String personGroupId = UUID.randomUUID().toString();
 		personGroup.setPersonGroupId(personGroupId);
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Content-Type", "application/json");
-		headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
 
 		RestTemplate restTemplate = new RestTemplate();
 
-		ResponseEntity<PersonGroup> response = restTemplate.exchange(personGroupUri, HttpMethod.PUT,
-				new HttpEntity<PersonGroup>(personGroup, headers), PersonGroup.class, personGroupId);
+		ResponseEntity<PersonGroup> response = 
+			restTemplate.exchange(
+				support.personGroupUri, 
+				HttpMethod.PUT,
+				support.augmentHeaders(personGroup), 
+				PersonGroup.class, 
+				personGroupId);
 
 		assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
 		// Put does not return a new object
+		return personGroup;
+
+	}
+	
+	/**
+	 * Update a new person group
+	 * @param personGroup
+	 * @return the updated person group
+	 */
+
+	@RequestMapping(path = "/personGroups/{personGroupId}", method = RequestMethod.PUT )
+	@ResponseBody
+	public PersonGroup trainPersonGroup(@PathVariable String personGroupId, @RequestBody PersonGroup personGroup) {
+
+		RestTemplate restTemplate = new RestTemplate();
+		ResponseEntity<String> response = null;
+		if (personGroup.getTrainingStatus().equals(TrainingStatus.needsTraining)) {
+			// This is a training request
+			response = 
+				restTemplate.exchange(
+					support.personGroupTrainingUri, 
+					HttpMethod.POST,
+					support.augmentHeaders(), 
+					String.class, 
+					personGroup.getPersonGroupId());
+				personGroup.setTrainingStatus(TrainingStatus.ongoing);
+		} else {
+			// This is an update request
+			response = 
+				restTemplate.exchange(
+					support.personGroupTrainingUri, 
+					HttpMethod.PATCH,
+					support.augmentHeaders(personGroup), 
+					String.class, 
+					personGroup.getPersonGroupId());
+		}
+		assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.ACCEPTED);
+		// Train does not return a new object
 		return personGroup;
 
 	}
@@ -114,19 +148,22 @@ public class PersonGroupController {
 	/**
 	 * Delete a person group
 	 * @param personGroupId
-	 * @return the created person group
 	 */
 	@RequestMapping(path = "/personGroups/{personGroupId}", method = RequestMethod.DELETE )
 	@ResponseBody
 	public void deletePersonGroup(@PathVariable String personGroupId) {
 
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Content-Type", "application/json");
-		headers.add("Ocp-Apim-Subscription-Key", subscriptionKey);
-
 		RestTemplate restTemplate = new RestTemplate();
-
-		restTemplate.delete(personGroupUri, personGroupId);
+		try {
+		restTemplate.exchange(
+				support.personGroupUri, 
+				HttpMethod.DELETE,
+				support.augmentHeaders(),
+				String.class, 
+				personGroupId);
+		} catch (Exception e) {
+			LOGGER.error("Failed to delete PersonGroup {}", personGroupId, e);
+		}
 		
 	}
 

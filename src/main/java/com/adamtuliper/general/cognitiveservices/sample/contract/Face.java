@@ -5,7 +5,7 @@ package com.adamtuliper.general.cognitiveservices.sample.contract;
  * @author csmith
  *
  */
-public class Face {
+public class Face implements MCSFaceObject{
 	String faceId;
 	Person person;
 	public String getFaceId() {

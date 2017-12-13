@@ -1,11 +1,14 @@
   microsoft:
     cognitiveservices:
       face:
-        uri: 
+        uri:
+          #base: "http://localhost:8085/face/v1.0"
           base: "https://westus.api.cognitive.microsoft.com/face/v1.0"
-          personGroups: "${microsoft.cognitiveservices.face.uri.base}/personGroups"
+          personGroups: "${microsoft.cognitiveservices.face.uri.base}/persongroups"
           personGroup: "${microsoft.cognitiveservices.face.uri.personGroups}/{personGroupId}"
-          person: "${microsoft.cognitiveservices.face.uri.base}/persons/{personId}"
-          people: "${microsoft.cognitiveservices.face.uri.personGroups}/{personGroupId}/persons?start={start}&size={size}"       
+          persons: ${microsoft.cognitiveservices.face.uri.personGroup}/persons
+          person: "${microsoft.cognitiveservices.face.uri.persons}/{personId}"
+          personsInPersonGroup: "${microsoft.cognitiveservices.face.uri.persons}/{personId}?start={start}&size={size}"       
+          personGroupTraining: ${microsoft.cognitiveservices.face.uri.personGroup}/train
       #ocp-apim-subscription-key: add your access key here or add as an environment variable eg: 
       

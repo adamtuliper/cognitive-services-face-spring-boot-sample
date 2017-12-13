@@ -5,7 +5,7 @@ package com.adamtuliper.general.cognitiveservices.sample.contract;
  * @author csmith
  *
  */
-public class Candidate {
+public class Candidate implements MCSFaceObject{
 	Person person;
 	Float confidenceLevel;
 	public Person getPerson() {
